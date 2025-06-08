@@ -57,3 +57,21 @@ class TripletDataset(Dataset):
 
         return anchor, positive, negative
 
+import torch.nn.functional as F
+
+class SiameseNetwork(nn.Module):
+    def __init__(self, backbone='resnet50'):
+        super(SiameseNetwork, self).__init__()
+        if backbone == 'resnet50':
+            self.model = models.resnet50(pretrained=True)
+            self.model.fc = nn.Identity()  # Remove classification head
+            self.embedding_size = 2048  # ResNet50 output feature size
+        elif backbone == 'mobilenet':
+            self.model = models.mobilenet_v2(pretrained=True)
+            self.model.classifier = nn.Identity()
+            self.embedding_size = 1280  # MobileNet output feature size
+        else:
+            raise ValueError("Backbone not supported")
+
+        self.fc = nn.Linear(self.embedding_size, 512)  # Reduce feature size
+        self.relu = nn.ReLU()
